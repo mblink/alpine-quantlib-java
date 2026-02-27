@@ -6,7 +6,6 @@ export CPUS="$(nproc)"
 export BOOST_VERSION=1.90.0
 export MAVEN_VERSION=3.9.12
 export QUANTLIB_VERSION=1.41.0
-export QUANTLIB_JAR_VERSION=0.1.0-SNAPSHOT
 export SWIG_VERSION=4.4.1
 
 apk add --no-cache --update --virtual .build-dependencies \
@@ -47,12 +46,26 @@ ln -s "$MAVEN_DIR/bin/mvn /usr/bin/mvn"
 # Build quantlib_for_maven
 git clone --revision "v$QUANTLIB_VERSION" --recurse-submodules --jobs "$CPUS" https://github.com/ralfkonrad/quantlib_for_maven.git
 cd quantlib_for_maven
+echo "diff --git a/java/pom.xml b/java/pom.xml
+index 68ecd0e..626616b 100644
+--- a/java/pom.xml
++++ b/java/pom.xml
+@@ -5,7 +5,7 @@
+
+     <groupId>io.github.ralfkonrad.quantlib_for_maven</groupId>
+     <artifactId>quantlib</artifactId>
+-    <version>0.1.0-SNAPSHOT</version>
++    <version>$QUANTLIB_VERSION</version>
+     <packaging>jar</packaging>
+
+     <name>QuantLib module</name>
+" | git apply
 cmake --preset release -L
 cmake --build --preset release -v --parallel "$CPUS"
 cd java
 ./mvnw install
 mkdir /build
-MAVEN_PREFIX="/root/.m2/repository/io/github/ralfkonrad/quantlib_for_maven/quantlib/$QUANTLIB_JAR_VERSION/quantlib-$QUANTLIB_JAR_VERSION"
+MAVEN_PREFIX="/root/.m2/repository/io/github/ralfkonrad/quantlib_for_maven/quantlib/$QUANTLIB_VERSION/quantlib-$QUANTLIB_VERSION"
 mv "$MAVEN_PREFIX.jar" "$MAVEN_PREFIX.pom" /build/
 
 # Clean up
