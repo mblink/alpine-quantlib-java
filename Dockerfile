@@ -39,10 +39,8 @@ RUN apk add --no-cache --update --virtual .build-dependencies automake autoconf 
   cmake --preset release -L && \
   cmake --build --preset release -v --parallel "$CPUS" && \
   mkdir /build && \
-  mv target/java/* /build/ && \
+  mv java/target/* /build/ && \
   cd .. && \
   # Clean up
   rm -rf /tmp/build && \
   apk del .build-dependencies
-
-CMD ["sh"]
