@@ -3,6 +3,7 @@ FROM eclipse-temurin:25-jdk-alpine
 ENV BOOST_VERSION=1.90.0
 ENV MAVEN_VERSION=3.9.12
 ENV QUANTLIB_VERSION=1.41.0
+ENV QUANTLIB_JAR_VERSION=0.1.0-SNAPSHOT
 ENV SWIG_VERSION=4.4.1
 
 RUN apk add --no-cache --update --virtual .build-dependencies automake autoconf bison build-base cmake git libtool linux-headers ninja-build pcre2-dev && \
@@ -38,9 +39,12 @@ RUN apk add --no-cache --update --virtual .build-dependencies automake autoconf 
   cd quantlib_for_maven && \
   cmake --preset release -L && \
   cmake --build --preset release -v --parallel "$CPUS" && \
+  cd java && \
+  ./mvnw install && \
   mkdir /build && \
-  mv java/target/* /build/ && \
-  cd .. && \
+  MAVEN_PREFIX="/root/.m2/repository/io/github/ralfkonrad/quantlib_for_maven/quantlib/${QUANTLIB_JAR_VERSION}/quantlib-${QUANTLIB_JAR_VERSION}" && \
+  mv "${MAVEN_PREFIX}.jar" "${MAVEN_PREFIX}.pom" /build/ && \
+  cd ../.. && \
   # Clean up
   rm -rf /tmp/build && \
   apk del .build-dependencies
