@@ -1,28 +1,47 @@
-FROM alpine:3.23
+FROM eclipse-temurin:25-jdk-alpine
 
 ENV BOOST_VERSION=1.90.0
-ENV QUANTLIB_VERSION=1.41
+ENV MAVEN_VERSION=3.9.12
+ENV QUANTLIB_VERSION=1.41.0
+ENV SWIG_VERSION=4.4.1
 
-RUN apk add --no-cache --update --virtual .build-dependencies automake autoconf build-base libtool linux-headers && \
+RUN apk add --no-cache --update --virtual .build-dependencies automake autoconf bison build-base cmake git libtool linux-headers ninja-build pcre2-dev && \
   mkdir -p /tmp/build && \
   cd /tmp/build && \
-  BOOST_DIR="boost_$(echo $BOOST_VERSION | tr '.' '_')" && \
-  CPUS="$(nproc --all)" && \
-  wget "https://archives.boost.io/release/${BOOST_VERSION}/source/${BOOST_DIR}.tar.gz" && \
-  tar -xzf "${BOOST_DIR}.tar.gz" && \
+  CPUS="$(nproc)" && \
+  export PATH="$PATH:/usr/lib/ninja-build/bin" && \
+  # Build boost
+  BOOST_DIR="boost-${BOOST_VERSION}" && \
+  wget "https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/${BOOST_DIR}-b2-nodocs.tar.xz" && \
+  tar -xf "${BOOST_DIR}-b2-nodocs.tar.xz" && \
   cd "${BOOST_DIR}" && \
   ./bootstrap.sh && \
   ./b2 --without-python --prefix=/usr -j "$CPUS" link=shared runtime-link=shared install && \
   cd .. && \
-  wget "https://github.com/lballabio/QuantLib/releases/download/v${QUANTLIB_VERSION}/QuantLib-${QUANTLIB_VERSION}.tar.gz" && \
-  tar -xzf "QuantLib-${QUANTLIB_VERSION}.tar.gz" && \
-  cd "QuantLib-${QUANTLIB_VERSION}" && \
-  sh autogen.sh && \
-  ./configure --prefix=/usr --disable-static --disable-examples --disable-benchmark CXXFLAGS=-O3 && \
+  # Build swig
+  SWIG_DIR="swig-${SWIG_VERSION}" && \
+  wget "https://github.com/swig/swig/archive/refs/tags/v${SWIG_VERSION}.tar.gz" -O "${SWIG_DIR}.tar.gz" && \
+  tar -xzf "${SWIG_DIR}.tar.gz" && \
+  cd "${SWIG_DIR}" && \
+  ./autogen.sh && \
+  ./configure --prefix=/usr && \
   make -j "$CPUS" && \
   make install && \
-  ldconfig ./ && \
   cd .. && \
+  # Install maven
+  MAVEN_DIR="apache-maven-${MAVEN_VERSION}" && \
+  wget "https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/${MAVEN_DIR}-bin.tar.gz" && \
+  tar -xzf "${MAVEN_DIR}-bin.tar.gz" && \
+  ln -s "${MAVEN_DIR}/bin/mvn /usr/bin/mvn" && \
+  # Build quantlib_for_maven
+  git clone --revision "v${QUANTLIB_VERSION}" --recurse-submodules --jobs "$CPUS" https://github.com/ralfkonrad/quantlib_for_maven.git && \
+  cd quantlib_for_maven && \
+  cmake --preset release -L && \
+  cmake --build --preset release -v --parallel "$CPUS" && \
+  mkdir /build && \
+  mv target/java/* /build/ && \
+  cd .. && \
+  # Clean up
   rm -rf /tmp/build && \
   apk del .build-dependencies
 
