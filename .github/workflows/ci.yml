@@ -44,20 +44,20 @@ jobs:
           platforms: linux/${{ env.ARCH }}
           outputs: type=local,dest=./output
 
-      - name: Copy files
+      - name: Copy artifacts
         if: github.event_name == 'push'
         run: |
           mkdir -p artifacts
           cp "output/build/quantlib-${{ env.QUANTLIB_VERSION }}.jar" "artifacts/${{ env.ARCH }}-quantlib-${{ env.QUANTLIB_VERSION }}.jar"
           cp "output/build/quantlib-${{ env.QUANTLIB_VERSION }}.pom" "artifacts/${{ env.ARCH }}-quantlib-${{ env.QUANTLIB_VERSION }}.pom"
 
-      - name: Attest files
+      - name: Attest artifacts
         if: github.event_name == 'push'
         uses: actions/attest@v4
         with:
           subject-path: 'artifacts/*'
 
-      - name: Upload files
+      - name: Upload artifacts
         if: github.event_name == 'push'
         uses: actions/upload-artifact@v6
         with:
@@ -66,11 +66,26 @@ jobs:
           if-no-files-found: error
           retention-days: 2
 
-      # TODO - draft release
-      # - name: Draft release
-      #   if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
-      #   with:
-      #     draft: true
-      #     files: output/build/*
-      #     fail_on_unmatched_files: true
+  release:
+    needs: [build]
+    # if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
 
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts/
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -R artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: artifacts/*
+          fail_on_unmatched_files: true
