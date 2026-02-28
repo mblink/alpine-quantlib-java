@@ -25,6 +25,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
+          target: export
           platforms: linux/amd64,linux/arm64
           outputs: type=local,dest=./output
 
