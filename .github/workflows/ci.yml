@@ -18,6 +18,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Count CPUs
+        id: count-cpus
+        run: |
+          echo "CPUS: $(nproc)"
+
       - name: Build
         id: push
         uses: docker/build-push-action@v6
