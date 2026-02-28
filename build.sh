@@ -5,7 +5,7 @@ set -exo pipefail
 export CPUS="$(nproc)"
 export BOOST_VERSION=1.90.0
 export MAVEN_VERSION=3.9.12
-export QUANTLIB_VERSION=1.41.0
+export QUANTLIB_VERSION="$(cat /tmp/quantlib-version)"
 export SWIG_VERSION=4.4.1
 
 apk add --no-cache --update --virtual .build-dependencies \

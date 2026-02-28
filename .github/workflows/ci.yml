@@ -7,6 +7,11 @@ on:
     branches: [main]
     tags: [v*]
 
+permissions:
+  attestations: write
+  contents: write
+  id-token: write
+
 jobs:
   build:
     strategy:
@@ -14,38 +19,39 @@ jobs:
       matrix:
         os: [ubuntu-24.04, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v6
+
+      - name: Set architecture
+        run: |
+          if [ "${{ matrix.os }}" = 'ubuntu-24.04' ]; then
+            echo "ARCH=amd64" >> $GITHUB_ENV
+          elif [ "${{ matrix.os }}" = 'ubuntu-24.04-arm' ]; then
+            echo "ARCH=arm64" >> $GITHUB_ENV
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build (amd64)
-        if: matrix.os == 'ubuntu-24.04'
+      - name: Build
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: false
           target: export
-          platforms: linux/amd64
+          platforms: linux/${{ env.ARCH }}
           outputs: type=local,dest=./output
 
-      - name: Build (arm64)
-        if: matrix.os == 'ubuntu-24.04-arm'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: false
-          target: export
-          platforms: linux/arm64
-          outputs: type=local,dest=./output
+      - name: Copy files
+        run: |
+          mkdir -p artifacts
+          version="$(cat quantlib-version)"
+          cp "output/build/quantlib-$version.jar" "artifacts/${{ env.ARCH }}-quantlib-$version.jar"
+          cp "output/build/quantlib-$version.pom" "artifacts/${{ env.ARCH }}-quantlib-$version.pom"
 
       - name: List files
-        run: find ./output -type f
+        run: find ./artifacts -type f
 
       # TODO - draft release
       # - name: Draft release
