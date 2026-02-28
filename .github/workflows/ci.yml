@@ -74,18 +74,28 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Download artifacts
+      - name: Set env
+        run: |
+          echo "QUANTLIB_VERSION=$(cat quantlib-version)" >> $GITHUB_ENV
+
+      - name: Download amd64 artifacts
         uses: actions/download-artifact@v8
         with:
+          name: amd64-quantlib-${{ env.QUANTLIB_VERSION }}
           path: artifacts/
-          merge-multiple: true
+
+      - name: Download arm64 artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: arm64-quantlib-${{ env.QUANTLIB_VERSION }}
+          path: artifacts/
 
       - name: List artifacts
         run: ls -R artifacts
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          draft: true
-          files: artifacts/*
-          fail_on_unmatched_files: true
+      # - name: Create Release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     draft: true
+      #     files: artifacts/*
+      #     fail_on_unmatched_files: true
