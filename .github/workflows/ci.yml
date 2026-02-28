@@ -26,9 +26,11 @@ jobs:
         run: |
           echo "QUANTLIB_VERSION=$(cat quantlib-version)" >> $GITHUB_ENV
           if [ "${{ matrix.os }}" = 'ubuntu-24.04' ]; then
-            echo "ARCH=amd64" >> $GITHUB_ENV
+            echo "DOCKER_ARCH=amd64" >> $GITHUB_ENV
+            echo "RELEASE_ARCH=x86_64" >> $GITHUB_ENV
           elif [ "${{ matrix.os }}" = 'ubuntu-24.04-arm' ]; then
-            echo "ARCH=arm64" >> $GITHUB_ENV
+            echo "DOCKER_ARCH=arm64" >> $GITHUB_ENV
+            echo "RELEASE_ARCH=aarch64" >> $GITHUB_ENV
           fi
 
       - name: Set up Docker Buildx
@@ -41,15 +43,15 @@ jobs:
           file: ./Dockerfile
           push: false
           target: export
-          platforms: linux/${{ env.ARCH }}
+          platforms: linux/${{ env.DOCKER_ARCH }}
           outputs: type=local,dest=./output
 
       - name: Copy artifacts
         if: github.event_name == 'push'
         run: |
           mkdir -p artifacts
-          cp "output/build/quantlib-${{ env.QUANTLIB_VERSION }}.jar" "artifacts/${{ env.ARCH }}-quantlib-${{ env.QUANTLIB_VERSION }}.jar"
-          cp "output/build/quantlib-${{ env.QUANTLIB_VERSION }}.pom" "artifacts/${{ env.ARCH }}-quantlib-${{ env.QUANTLIB_VERSION }}.pom"
+          cp "output/build/quantlib-${{ env.QUANTLIB_VERSION }}.jar" "artifacts/${{ env.RELEASE_ARCH }}-quantlib-${{ env.QUANTLIB_VERSION }}.jar"
+          cp "output/build/quantlib-${{ env.QUANTLIB_VERSION }}.pom" "artifacts/${{ env.RELEASE_ARCH }}-quantlib-${{ env.QUANTLIB_VERSION }}.pom"
 
       - name: Attest artifacts
         if: github.event_name == 'push'
@@ -61,7 +63,7 @@ jobs:
         if: github.event_name == 'push'
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ env.ARCH }}-quantlib-${{ env.QUANTLIB_VERSION }}
+          name: ${{ env.RELEASE_ARCH }}-quantlib-${{ env.QUANTLIB_VERSION }}
           path: artifacts/
           if-no-files-found: error
           retention-days: 2
@@ -77,20 +79,17 @@ jobs:
         run: |
           echo "QUANTLIB_VERSION=$(cat quantlib-version)" >> $GITHUB_ENV
 
-      - name: Download amd64 artifacts
+      - name: Download x86_64 artifacts
         uses: actions/download-artifact@v8
         with:
-          name: amd64-quantlib-${{ env.QUANTLIB_VERSION }}
+          name: x86_64-quantlib-${{ env.QUANTLIB_VERSION }}
           path: artifacts/
 
-      - name: Download arm64 artifacts
+      - name: Download aarch64 artifacts
         uses: actions/download-artifact@v8
         with:
-          name: arm64-quantlib-${{ env.QUANTLIB_VERSION }}
+          name: aarch64-quantlib-${{ env.QUANTLIB_VERSION }}
           path: artifacts/
-
-      - name: List artifacts
-        run: ls -R artifacts
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
