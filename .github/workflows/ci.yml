@@ -45,17 +45,20 @@ jobs:
           outputs: type=local,dest=./output
 
       - name: Copy files
+        if: github.event_name == 'push'
         run: |
           mkdir -p artifacts
           cp "output/build/quantlib-${{ env.QUANTLIB_VERSION }}.jar" "artifacts/${{ env.ARCH }}-quantlib-${{ env.QUANTLIB_VERSION }}.jar"
           cp "output/build/quantlib-${{ env.QUANTLIB_VERSION }}.pom" "artifacts/${{ env.ARCH }}-quantlib-${{ env.QUANTLIB_VERSION }}.pom"
 
       - name: Attest files
+        if: github.event_name == 'push'
         uses: actions/attest@v4
         with:
           subject-path: 'artifacts/*'
 
       - name: Upload files
+        if: github.event_name == 'push'
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.ARCH }}-quantlib-${{ env.QUANTLIB_VERSION }}
