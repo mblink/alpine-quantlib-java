@@ -47,8 +47,6 @@ jobs:
       - name: List files
         run: find ./output -type f
 
-      # TODO - test files
-
       # TODO - draft release
       # - name: Draft release
       #   if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'

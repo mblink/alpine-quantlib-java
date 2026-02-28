@@ -9,7 +9,7 @@ export QUANTLIB_VERSION=1.41.0
 export SWIG_VERSION=4.4.1
 
 apk add --no-cache --update --virtual .build-dependencies \
-  automake autoconf bison build-base cmake git libtool linux-headers ninja-build pcre2-dev
+  automake autoconf bison build-base cmake curl git jq libtool linux-headers ninja-build pcre2-dev
 
 export PATH="$PATH:/usr/lib/ninja-build/bin"
 
@@ -67,6 +67,19 @@ cd java
 mkdir /build
 MAVEN_PREFIX="/root/.m2/repository/io/github/ralfkonrad/quantlib_for_maven/quantlib/$QUANTLIB_VERSION/quantlib-$QUANTLIB_VERSION"
 mv "$MAVEN_PREFIX.jar" "$MAVEN_PREFIX.pom" /build/
+
+# Install scala-cli
+scalaCliJar="$BUILD_DIR/scala-cli.jar"
+scalaCliVersion="$(curl -s 'https://api.github.com/repos/VirtusLab/scala-cli/releases/latest' | jq -r '.tag_name' | sed -E 's/^v?//')"
+curl -o "$scalaCliJar" "https://repo1.maven.org/maven2/org/virtuslab/scala-cli/cliBootstrapped/$scalaCliVersion/cliBootstrapped-$scalaCliVersion.jar"
+
+# Test quantlib jar with scala-cli
+java -jar "$scalaCliJar" \
+  --server=false \
+  -S 3.8.2 \
+  --classpath "/build/quantlib-$QUANTLIB_VERSION.jar" \
+  --dep org.slf4j:slf4j-api:2.0.17 \
+  /tmp/test.scala
 
 # Clean up
 cd
