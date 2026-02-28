@@ -22,8 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set architecture
+      - name: Set env
         run: |
+          echo "QUANTLIB_VERSION=$(cat quantlib-version)" >> $GITHUB_ENV
           if [ "${{ matrix.os }}" = 'ubuntu-24.04' ]; then
             echo "ARCH=amd64" >> $GITHUB_ENV
           elif [ "${{ matrix.os }}" = 'ubuntu-24.04-arm' ]; then
@@ -46,12 +47,21 @@ jobs:
       - name: Copy files
         run: |
           mkdir -p artifacts
-          version="$(cat quantlib-version)"
-          cp "output/build/quantlib-$version.jar" "artifacts/${{ env.ARCH }}-quantlib-$version.jar"
-          cp "output/build/quantlib-$version.pom" "artifacts/${{ env.ARCH }}-quantlib-$version.pom"
+          cp "output/build/quantlib-${{ env.QUANTLIB_VERSION }}.jar" "artifacts/${{ env.ARCH }}-quantlib-${{ env.QUANTLIB_VERSION }}.jar"
+          cp "output/build/quantlib-${{ env.QUANTLIB_VERSION }}.pom" "artifacts/${{ env.ARCH }}-quantlib-${{ env.QUANTLIB_VERSION }}.pom"
 
-      - name: List files
-        run: find ./artifacts -type f
+      - name: Attest files
+        uses: actions/attest@v4
+        with:
+          subject-path: 'artifacts/*'
+
+      - name: Upload files
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ env.ARCH }}-quantlib-${{ env.QUANTLIB_VERSION }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 2
 
       # TODO - draft release
       # - name: Draft release
