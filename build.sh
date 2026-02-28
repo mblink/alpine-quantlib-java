@@ -2,7 +2,7 @@
 
 set -exo pipefail
 
-export CPUS="$(nproc)"
+export CPUS=$(( $(nproc) / 2 ))
 export BOOST_VERSION=1.90.0
 export MAVEN_VERSION=3.9.12
 export QUANTLIB_VERSION=1.41.0
